@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Barangay Dispute — SafeKaNiño{% endblock %}
+{% block body %}
+<div class="user-wrap">
+  <button class="icon-btn theme-fab" onclick="toggleTheme()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+  <div class="user-header">
+    <div class="brand-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5l-8-3zm-1 6h2v6h-2V8zm0 8h2v2h-2v-2z"/></svg>
+    </div>
+    <h1>SafeKaNiño</h1>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+
+  <form method="post">
+    <section class="form-section">
+      <h2>1. Complainant (Nagrereklamo) Information</h2>
+      <div class="form-grid">
+        <label>Full Name:</label><input class="input" name="full_name" placeholder="enter your full name" />
+        <label>Contact Number:</label><input class="input" name="contact" placeholder="+63" />
+        <label>Complete Address:</label><input class="input" name="address" />
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>2. Respondent (Inirereklamo) Information</h2>
+      <div class="form-grid">
+        <label>Full Name of Respondent:</label><input class="input" name="resp_name" />
+        <label>Complete Address:</label><textarea name="resp_address"></textarea>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>3. Nature of the Dispute</h2>
+      <div class="form-grid">
+        <label>Dispute Category:</label>
+        <select name="category">
+          <option>Unpaid Debt/Collection of Sum of Money</option>
+          <option>Boundary Dispute</option><option>Family Conflict</option>
+          <option>Neighbor Conflict</option><option>Other</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>4. The Narrative (Ang Kwento)</h2>
+      <div class="form-grid">
+        <label>Statement of the Problem:</label><textarea name="problem" style="min-height:120px"></textarea>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>5. Relief Sought (Ang Gustong Mangyari)</h2>
+      <div class="form-grid">
+        <label>What is the desired outcome?</label><textarea name="relief"></textarea>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>6. Supporting Documents (Optional)</h2>
+      <div class="form-grid">
+        <label>Attachments:</label>
+        <div>
+          <label class="attach" style="cursor: pointer;">
+            <input type="file" name="evidence_file" accept="image/*" style="display: none;" onchange="this.nextElementSibling.innerText = '📎 ' + this.files[0].name" />
+            <span>📎 Add Attachment</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <div class="submit-row"><button class="btn" type="submit">Submit</button></div>
+  </form>
+</div>
+{% endblock %}

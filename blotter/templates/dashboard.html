@@ -1,0 +1,169 @@
+{% extends "admin_base.html" %} {% block title %}Dashboard — SafeKaNiño{%
+endblock %} {% block content %}
+<h1 class="greeting">Mabuhay! Maligayang Pagbabalik.</h1>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-num">{{ stats.pending }}</div>
+    <div class="stat-label">Pending Request</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ stats.completed }}</div>
+    <div class="stat-label">Completed Request</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ stats.total }}</div>
+    <div class="stat-label">Total Reports</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ stats.high }}</div>
+    <div class="stat-label">High to Critical Priority</div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <div class="panel panel-status">
+    <div class="panel-head">
+      <h2 class="panel-title">Status Reports</h2>
+      <div class="panel-actions">
+        <select class="select" id="dashPriorityFilter">
+          <option value="">All Priority</option>
+          <option value="Critical">Critical</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <a class="view-all" data-link href="{{ url_for('status_reports') }}"
+          >View all →</a
+        >
+      </div>
+    </div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Citizen</th>
+          <th>Incident Type</th>
+          <th>Priority</th>
+          <th>Date Filed</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="dashTableBody">
+        {% for r in reports %}
+        <tr
+          data-priority="{{ r.priority }}"
+          data-id="{{ r.id | lower }}"
+          data-citizen="{{ r.citizen | lower }}"
+          data-incident="{{ r.incident | lower }}"
+          data-status="{{ r.status | lower }}"
+        >
+          <td>{{ r.id }}</td>
+          <td>{{ r.citizen }}</td>
+          <td>{{ r.incident }}</td>
+          <td>{{ r.priority }}</td>
+          <td>{{ r.date }}</td>
+          <td>
+            <span class="badge badge-{{ r.status|lower|replace(' ','-') }}"
+              >{{ r.status }}</span
+            >
+          </td>
+          <td>
+            <a
+              href="#"
+              class="view-link"
+              onclick="viewReport('{{ r.id }}');return false;"
+              >View</a
+            >
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td
+            colspan="7"
+            style="text-align: center; color: var(--text-muted); padding: 24px"
+          >
+            No reports yet.
+          </td>
+        </tr>
+        {% endfor %}
+        <tr id="dashNoResults" style="display: none">
+          <td
+            colspan="7"
+            style="text-align: center; color: var(--text-muted); padding: 24px"
+          >
+            No matching reports found.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 20px">
+    <div class="panel">
+      <h3 class="panel-title" style="margin-bottom: 12px">Hotspot</h3>
+      <div class="hotspot-head"><span>Sitio</span><span>Percentage</span></div>
+      {% for h in hotspots %}
+      <div class="hotspot-row">
+        <span>{{ h.sitio }}</span><strong>{{ h.percentage }}%</strong>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="panel">
+      <h3 class="panel-title" style="margin-bottom: 12px">Notifications</h3>
+      <div id="dashNotifList">
+        {% for n in notifications %}
+        <div class="notif-card">
+          <div class="notif-title">{{ n.title }}</div>
+          <div class="notif-reporter"><strong>{{ n.reporter }}</strong></div>
+          <div class="notif-incident">{{ n.incident_type }}</div>
+          <div class="notif-meta">{{ n.created }}</div>
+        </div>
+        {% else %}
+        <div style="font-size: 13px; color: var(--text-muted)">
+          No notifications yet.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const search = document.getElementById("topbarSearch");
+    const priority = document.getElementById("dashPriorityFilter");
+    const tbody = document.getElementById("dashTableBody");
+    const noResult = document.getElementById("dashNoResults");
+
+    function applyFilters() {
+      const q = search ? search.value.trim().toLowerCase() : "";
+      const pri = priority.value;
+      let visible = 0;
+
+      tbody.querySelectorAll("tr[data-id]").forEach((row) => {
+        const matchSearch =
+          !q ||
+          [
+            row.dataset.id,
+            row.dataset.citizen,
+            row.dataset.incident,
+            row.dataset.status,
+          ].some((v) => v && v.includes(q));
+
+        const matchPriority = !pri || row.dataset.priority === pri;
+
+        const show = matchSearch && matchPriority;
+        row.style.display = show ? "" : "none";
+        if (show) visible++;
+      });
+
+      noResult.style.display = visible === 0 ? "" : "none";
+    }
+
+    search?.addEventListener("input", applyFilters);
+    priority.addEventListener("change", applyFilters);
+  })();
+</script>
+{% endblock %}

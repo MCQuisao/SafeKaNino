@@ -1,0 +1,42 @@
+{% extends "base.html" %} {% block title %}Admin Login — SafeKaNiño{% endblock
+%} {% block body %}
+<div class="auth-wrap">
+  <button
+    class="icon-btn theme-fab"
+    onclick="toggleTheme()"
+    aria-label="Toggle theme"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  </button>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+        <path
+          d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5l-8-3zm-1 6h2v6h-2V8zm0 8h2v2h-2v-2z"
+        />
+      </svg>
+    </div>
+    <h1 class="auth-title">SafeKaNiño</h1>
+    <p class="auth-sub">Admin Sign In</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for cat,
+    msg in messages %}
+    <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <form method="post">
+      <div class="form-row">
+        <label>Username</label
+        ><input class="input" name="username" required autofocus />
+      </div>
+      <div class="form-row">
+        <label>Password</label
+        ><input class="input" type="password" name="password" required />
+      </div>
+      <button class="btn btn-block" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

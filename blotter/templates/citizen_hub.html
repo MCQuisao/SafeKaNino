@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SafeKaNiño</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <script defer
+            src="{{ url_for('static', filename='js/main.js') }}">
+    </script>
+</head>
+
+<body>
+
+<div class="user-wrap page">
+
+    <div class="user-header">
+
+        <div class="brand-logo">S</div>
+
+        <h1>SafeKaNiño</h1>
+
+        <p>
+            Community Safety and Barangay Reporting System
+        </p>
+
+    </div>
+
+    <div class="hub-card">
+
+        <h2>📋 File a Report</h2>
+
+        <p>
+            Submit a criminal, traffic,
+            nuisance, or dispute report.
+        </p>
+
+        <a href="{{ url_for('report_type') }}"
+           class="btn">
+
+            File Report
+
+        </a>
+
+    </div>
+
+    <br>
+
+    <div class="hub-card">
+
+        <h2>📊 Community Safety Hotspots</h2>
+
+        {% for item in hotspots %}
+
+        <div class="hotspot-row">
+
+            <span>{{ item.sitio }}</span>
+
+            <strong>{{ item.percentage }}%</strong>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <br>
+
+
+    <div class="hub-card">
+
+        <h2>☎ Emergency Contacts</h2>
+
+        <p>Barangay Hall: 0912-345-6789</p>
+
+        <p>Police Station: 911</p>
+
+        <p>Fire Department: 911</p>
+
+        <p>Health Center: 0917-123-4567</p>
+
+    </div>
+
+</div>
+
+</body>
+</html>

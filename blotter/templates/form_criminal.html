@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Criminal Offense — SafeKaNiño{% endblock %}
+{% block body %}
+<div class="user-wrap">
+  <button class="icon-btn theme-fab" onclick="toggleTheme()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+  <div class="user-header">
+    <div class="brand-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5l-8-3zm-1 6h2v6h-2V8zm0 8h2v2h-2v-2z"/></svg>
+    </div>
+    <h1>SafeKaNiño</h1>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+
+  <form method="post" enctype="multipart/form-data">
+    <section class="form-section">
+      <h2>1. Complainant (Victim/Reporter) Information</h2>
+      <div class="form-grid">
+        <label>Full Name:</label><input class="input" name="full_name" placeholder="Enter your full name" required />
+        <label>Contact Number:</label><input class="input" name="contact" placeholder="+63" required />
+        <label >Complete Address:</label><textarea name="address" required></textarea>
+        <label>Valid ID</label><div>
+            <label class="attach" style="cursor: pointer;">
+              <input type="file" name="valid_id_file" accept="image/*" style="display: none;" onchange="this.nextElementSibling.innerText = '📎 ' + this.files[0].name" />
+              <span>📎 Add Attachment</span>
+            </label>
+          </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>2. Incident Specifics</h2>
+      <div class="form-grid">
+        <label>Specific Crime Type:</label>
+        <select name="crime_type">
+          <option>Physical Assault</option><option>Theft</option><option>Cybercrime</option><option>Vandalism</option>
+        </select>
+        <label>Date of Incident:</label><input class="input" type="date" name="incident_date" />
+        <label>Time of Incident:</label><input class="input" type="time" name="incident_time" />
+        <label>Location of Incident:</label><textarea name="incident_location"></textarea>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>3. Respondent (Suspect) Information</h2>
+      <div class="form-grid">
+        <label>Is the suspect known?</label>
+        <div class="radio-row">
+          <label><input type="radio" name="known" value="yes" onchange="toggleRespondent('yes')" checked /> Yes</label>
+          <label><input type="radio" name="known" value="no" onchange="toggleRespondent('no')" /> No</label>
+        </div>
+      </div>
+      <div id="respondent-yes" style="margin-top:14px">
+        <span class="chip">If Yes</span>
+        <div class="form-grid">
+          <label>Full Name:</label><input class="input" name="suspect_name" placeholder="Enter full name of the suspect" />
+          <label>Alias (If any):</label><input class="input" name="alias" placeholder="Alias" />
+          <label>Address:</label><textarea name="suspect_address"></textarea>
+        </div>
+      </div>
+      <div id="respondent-no" style="display:none;margin-top:14px">
+        <span class="chip">If No</span>
+        <div class="form-grid">
+          <label>Suspect Description:</label><textarea name="suspect_desc"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>4. Narrative</h2>
+      <div class="form-grid">
+        <label>Detailed Narrative of the Incident:</label><textarea name="narrative" style="min-height:160px"></textarea>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>5. Evidence & Witnesses</h2>
+      <div class="form-grid">
+        <label>Witness Names:</label><input class="input" name="witness_names" />
+        <label>Contacts:</label><input class="input" name="witness_contacts" />
+        <label>File Upload (Evidence)</label><div>
+            <label class="attach" style="cursor: pointer;">
+              <input type="file" name="evidence_file" accept="image/*" style="display: none;" onchange="this.nextElementSibling.innerText = '📎 ' + this.files[0].name" />
+              <span>📎 Add Attachment</span>
+            </label>
+          </div>
+      </div>
+    </section>
+
+    <div class="submit-row"><button class="btn" type="submit">Submit</button></div>
+  </form>
+</div>
+{% endblock %}

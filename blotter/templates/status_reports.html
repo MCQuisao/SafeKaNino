@@ -1,0 +1,146 @@
+{% extends "admin_base.html" %} {% block title %}Status Reports — SafeKaNiño{%
+endblock %} {% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <h2 class="panel-title">Status Reports</h2>
+    <div class="panel-actions">
+      <select class="select" id="statusPriorityFilter">
+        <option value="">All Priority</option>
+        <option value="Critical">Critical</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <a class="btn" href="{{ url_for('export_csv') }}">⬇ Export</a>
+    </div>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>ID</th>
+        <th>Citizen</th>
+        <th>Incident Type</th>
+        <th>Priority</th>
+        <th>Date Filed</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="statusTableBody">
+      {% for r in reports %}
+      <tr
+        data-priority="{{ r.priority }}"
+        data-id="{{ r.id | lower }}"
+        data-citizen="{{ r.citizen | lower }}"
+        data-incident="{{ r.incident | lower }}"
+        data-status="{{ r.status | lower }}"
+      >
+        <td>{{ start_index + loop.index }}</td>
+        <td>{{ r.id }}</td>
+        <td>{{ r.citizen }}</td>
+        <td>{{ r.incident }}</td>
+        <td>{{ r.priority }}</td>
+        <td>{{ r.date }}</td>
+        <td>
+          <span class="badge badge-{{ r.status|lower|replace(' ','-') }}"
+            >{{ r.status }}</span
+          >
+        </td>
+        <td>
+          <a
+            href="#"
+            class="view-link"
+            onclick="viewReport('{{ r.id }}');return false;"
+            >View</a
+          >
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td
+          colspan="8"
+          style="text-align: center; color: var(--text-muted); padding: 24px"
+        >
+          No reports yet.
+        </td>
+      </tr>
+      {% endfor %}
+      <tr id="statusNoResults" style="display: none">
+        <td
+          colspan="8"
+          style="text-align: center; color: var(--text-muted); padding: 24px"
+        >
+          No matching reports found.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    <div class="pagination-info">
+      Showing <strong>{{ start }}-{{ end }}</strong> of
+      <strong>{{ total }}</strong> reports
+    </div>
+    <div class="pages">
+      <a
+        class="page-btn"
+        data-link
+        href="{{ url_for('status_reports', page=page-1) if page>1 else '#' }}"
+        >‹</a
+      >
+      {% for p in range(1, total_pages+1) %}
+      <a
+        class="page-btn {{ 'active' if p==page }}"
+        data-link
+        href="{{ url_for('status_reports', page=p) }}"
+        >{{ p }}</a
+      >
+      {% endfor %}
+      <a
+        class="page-btn"
+        data-link
+        href="{{ url_for('status_reports', page=page+1) if page<total_pages else '#' }}"
+        >›</a
+      >
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const search = document.getElementById("topbarSearch");
+    const priority = document.getElementById("statusPriorityFilter");
+    const tbody = document.getElementById("statusTableBody");
+    const noResult = document.getElementById("statusNoResults");
+
+    function applyFilters() {
+      const q = search ? search.value.trim().toLowerCase() : "";
+      const pri = priority.value;
+      let visible = 0;
+
+      tbody.querySelectorAll("tr[data-id]").forEach((row) => {
+        const matchSearch =
+          !q ||
+          [
+            row.dataset.id,
+            row.dataset.citizen,
+            row.dataset.incident,
+            row.dataset.status,
+          ].some((v) => v && v.includes(q));
+
+        const matchPriority = !pri || row.dataset.priority === pri;
+
+        const show = matchSearch && matchPriority;
+        row.style.display = show ? "" : "none";
+        if (show) visible++;
+      });
+
+      noResult.style.display = visible === 0 ? "" : "none";
+    }
+
+    search?.addEventListener("input", applyFilters);
+    priority.addEventListener("change", applyFilters);
+  })();
+</script>
+{% endblock %}

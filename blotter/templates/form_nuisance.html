@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Public Nuisance — SafeKaNiño{% endblock %}
+{% block body %}
+<div class="user-wrap">
+  <button class="icon-btn theme-fab" onclick="toggleTheme()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+  <div class="user-header">
+    <div class="brand-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5l-8-3zm-1 6h2v6h-2V8zm0 8h2v2h-2v-2z"/></svg>
+    </div>
+    <h1>SafeKaNiño</h1>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+
+  <form method="post">
+    <section class="form-section">
+      <h2>1. Basics (What & Where)</h2>
+      <div class="form-grid">
+        <label>Type of Nuisance:</label>
+        <select name="nuisance_type">
+          <option>Loud Karaoke/Noise</option><option>Illegal Parking</option>
+          <option>Improper Garbage Disposal</option><option>Stray Animals</option>
+        </select>
+        <label>Location:</label><input class="input" name="location" placeholder="exact street, alley, or house number." />
+        <label>Time of Nuisance:</label><input class="input" name="time" placeholder='e.g., "11:00 PM"' />
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>2. Offender Information (If known)</h2>
+      <div class="form-grid">
+        <label>Who/What is causing it?</label>
+        <textarea name="offender" placeholder='e.g., "Residents of House 14" or "Silver Toyota Vios blocking the gate"'></textarea>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>3. Evidence</h2>
+      <div class="form-grid">
+        <label>Photo Upload:</label><div>
+          <label class="attach" style="cursor: pointer;">
+            <input type="file" name="evidence_file" accept="image/*" style="display: none;" onchange="this.nextElementSibling.innerText = '📎 ' + this.files[0].name" />
+            <span>📎 Add Attachment</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>4. Reporter Information</h2>
+      <div class="form-grid">
+        <label>File Anonymously?</label>
+        <div class="radio-row">
+          <label><input type="radio" name="anon" value="yes" /> Yes</label>
+          <label><input type="radio" name="anon" value="no" /> No</label>
+        </div>
+      </div>
+    </section>
+
+    <div class="submit-row"><button class="btn" type="submit">Submit</button></div>
+  </form>
+</div>
+{% endblock %}

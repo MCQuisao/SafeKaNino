@@ -1,0 +1,66 @@
+{% extends "base.html" %} {% block title %}Report — SafeKaNiño{% endblock %} {%
+block body %}
+<div class="user-wrap">
+  <button class="icon-btn theme-fab" onclick="toggleTheme()">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  </button>
+  <div class="user-header">
+    <div class="brand-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path
+          d="M12 2L4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5l-8-3zm-1 6h2v6h-2V8zm0 8h2v2h-2v-2z"
+        />
+      </svg>
+    </div>
+    <h1>SafeKaNiño</h1>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% for cat,
+  msg in messages %}
+  <div class="flash {{ cat }}">{{ msg }}</div>
+  {% endfor %} {% endwith %}
+
+  <form
+    id="report-type-form"
+    onsubmit="
+      event.preventDefault();
+      go();
+    "
+  >
+    <h2 class="choice-question">What type of report?</h2>
+    <div class="choice-list">
+      <label class="choice"
+        ><input type="radio" name="t" value="criminal" required /><span
+          >Criminal Offense (Theft, Assault, Cybercrime, etc.)</span
+        ></label
+      >
+      <label class="choice"
+        ><input type="radio" name="t" value="traffic" /><span
+          >Traffic & Road Incident (Accidents, Hit-and-Run)</span
+        ></label
+      >
+      <label class="choice"
+        ><input type="radio" name="t" value="nuisance" /><span
+          >Public Nuisance (Noise, Illegal Parking, Garbage)</span
+        ></label
+      >
+      <label class="choice"
+        ><input type="radio" name="t" value="dispute" /><span
+          >Civil / Barangay Dispute (Family/Neighbor conflict, Debts)</span
+        ></label
+      >
+    </div>
+    <div class="next-row"><button class="btn" type="submit">Next</button></div>
+  </form>
+</div>
+
+<script>
+  function go() {
+    const v = document.querySelector('input[name="t"]:checked').value;
+    document.querySelector(".page").classList.add("page-leave");
+    setTimeout(() => (window.location.href = "/report/" + v), 180);
+  }
+</script>
+{% endblock %}

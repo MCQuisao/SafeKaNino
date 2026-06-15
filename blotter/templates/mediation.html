@@ -1,0 +1,126 @@
+{% extends "admin_base.html" %} {% block title %}Mediation — SafeKaNiño{%
+endblock %} {% block content %}
+<div class="panel-head" style="margin-bottom: 16px">
+  <h1 class="greeting" style="font-size: 24px; margin: 0">Hearing Schedule</h1>
+  <button class="btn" onclick="openModal('scheduleModal')">
+    + Schedule New Hearing
+  </button>
+</div>
+
+<div class="cal-grid">
+  <div id="calendar-root" class="calendar"></div>
+  <div class="hearings-panel">
+    <h3 class="panel-title" id="hearings-title" style="margin-bottom: 16px">
+      Hearings
+    </h3>
+    <div id="hearings-list"></div>
+  </div>
+</div>
+
+<!-- Schedule modal -->
+<div class="modal-backdrop" id="scheduleModal">
+  <div class="modal" style="max-width: 560px">
+    <button class="modal-close" onclick="closeModal('scheduleModal')">✕</button>
+    <h2 class="modal-title" style="margin-bottom: 18px">
+      Schedule New Hearing
+    </h2>
+    <form method="post" action="{{ url_for('schedule_hearing') }}">
+      <div class="form-row">
+        <label>Select Pending Report</label>
+        <select
+          class="input"
+          name="report_id"
+          id="reportSelect"
+          required
+          onchange="fillReport()"
+        >
+          <option value="">— choose a pending report —</option>
+          {% for r in pending_reports %}
+          <option
+            value="{{ r.id }}"
+            data-citizen="{{ r.citizen }}"
+            data-incident="{{ r.incident }}"
+          >
+            {{ r.id }} — {{ r.citizen }} ({{ r.incident }})
+          </option>
+          {% else %}
+          <option disabled>No pending reports</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Complainant</label
+        ><input class="input" id="rsCitizen" readonly />
+      </div>
+      <div class="form-row">
+        <label>Incident</label><input class="input" id="rsIncident" readonly />
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
+        <div class="form-row">
+          <label>Date</label
+          ><input class="input" type="date" name="date" required />
+        </div>
+        <div class="form-row">
+          <label>Time</label
+          ><input class="input" type="time" name="time" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Mediator</label
+        ><input class="input" name="mediator" value="Barangay Captain" />
+      </div>
+      <div class="submit-row">
+        <button class="btn" type="submit">Schedule</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Update status modal -->
+<div class="modal-backdrop" id="statusModal">
+  <div class="modal" style="max-width: 420px">
+    <button class="modal-close" onclick="closeModal('statusModal')">✕</button>
+    <h2 class="modal-title" style="margin-bottom: 18px">Update Status</h2>
+    <input type="hidden" id="statusHearingId" />
+    <div
+      id="statusMeta"
+      style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px"
+    ></div>
+    <div class="form-row">
+      <label>New Status</label>
+      <select class="input" id="statusSelect">
+        <option>Pending</option>
+        <option>In Progress</option>
+        <option>Settled</option>
+      </select>
+    </div>
+    <div class="submit-row">
+      <button class="btn" onclick="submitStatus()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.__HEARINGS__ = {{ hearings|tojson }};
+  function fillReport() {
+    const s = document.getElementById('reportSelect');
+    const o = s.options[s.selectedIndex];
+    document.getElementById('rsCitizen').value = o?.dataset.citizen || '';
+    document.getElementById('rsIncident').value = o?.dataset.incident || '';
+  }
+  function openStatus(id, meta) {
+    document.getElementById('statusHearingId').value = id;
+    document.getElementById('statusMeta').textContent = meta;
+    openModal('statusModal');
+  }
+  async function submitStatus() {
+    const id = document.getElementById('statusHearingId').value;
+    const status = document.getElementById('statusSelect').value;
+    const fd = new FormData(); fd.append('hearing_id', id); fd.append('status', status);
+    const res = await fetch("{{ url_for('update_hearing_status') }}", {method:'POST', body:fd});
+    if (res.ok) location.reload();
+  }
+</script>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+{% endblock %}
