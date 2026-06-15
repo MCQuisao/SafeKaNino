@@ -1,116 +1,148 @@
-from nlp_classifier import detect_priority
-from flask import (Flask, render_template, request, redirect, url_for,
-                   session, jsonify, flash, Response, abort)
-from flask_sqlalchemy import SQLAlchemy
+import csv
 from datetime import datetime
-from functools import wraps
-import csv, io, uuid, json
+ import io
+import json
 import os
+from functools import wraps
+import uuid
+
+from flask import (
+    Flask,
+    Response,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from flask_sqlalchemy import SQLAlchemy
+from nlp_classifier import detect_priority
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = "safekanino-secret-key-change-me"
 
-# ---------------- Database config ----------------
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    'postgresql://postgres:Marvin121002@localhost:5432/safekanino_db'
+# --- Production Secret Key Configuration ---
+app.secret_key = os.environ.get("SECRET_KEY", "safekanino-secret-key-change-me")
+
+# --- Production Database Config (Railway Connection) ---
+db_url = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://postgres:Marvin121002@localhost:5432/safekanino_db",
 )
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Fixes compatibility issue since SQLAlchemy requires 'postgresql://' instead of 'postgres://'
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
+# --- Upload Directory ---
+UPLOAD_FOLDER = os.path.join("static", "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# ---------------- Admin account only ----------------
+# --- Data Structures & Configuration ---
 USERS = {
     "admin": {"password": "admin123", "role": "admin", "name": "Barangay Admin"},
 }
 
 TYPE_LABELS = {
     "criminal": "Criminal Offense",
-    "traffic":  "Traffic & Road Incident",
+    "traffic": "Traffic & Road Incident",
     "nuisance": "Public Nuisance",
-    "dispute":  "Civil / Barangay Dispute",
+    "dispute": "Civil / Barangay Dispute",
 }
 
 HOTSPOTS = [
-    {"sitio": "Libjo",   "percentage": 27},
-    {"sitio": "Wawa",    "percentage": 13},
-    {"sitio": "Ilaya",   "percentage": 35},
+    {"sitio": "Libjo", "percentage": 27},
+    {"sitio": "Wawa", "percentage": 13},
+    {"sitio": "Ilaya", "percentage": 35},
     {"sitio": "Kaingin", "percentage": 25},
 ]
 
+
 # ---------------- Models ----------------
 
-class Report(db.Model):
-    __tablename__ = 'reports'
 
-    seq         = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    ticket_id   = db.Column(db.String(20), unique=True, nullable=False)
-    rtype       = db.Column(db.String(20), nullable=False)
-    type_label  = db.Column(db.String(50), nullable=False)
-    incident    = db.Column(db.String(100), nullable=False)
-    citizen     = db.Column(db.String(100), nullable=False)
-    priority    = db.Column(db.String(20), nullable=False)
-    date_filed  = db.Column(db.String(20), nullable=False)
-    status      = db.Column(db.String(20), nullable=False, default='Pending')
-    fields_json = db.Column(db.Text, nullable=False, default='{}')
+class Report(db.Model):
+    __tablename__ = "reports"
+
+    seq = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    ticket_id = db.Column(db.String(20), unique=True, nullable=False)
+    rtype = db.Column(db.String(20), nullable=False)
+    type_label = db.Column(db.String(50), nullable=False)
+    incident = db.Column(db.String(100), nullable=False)
+    citizen = db.Column(db.String(100), nullable=False)
+    priority = db.Column(db.String(20), nullable=False)
+    date_filed = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="Pending")
+    fields_json = db.Column(db.Text, nullable=False, default="{}")
 
     def to_dict(self):
         return {
-            "id":         self.ticket_id,
-            "type":       self.rtype,
+            "id": self.ticket_id,
+            "type": self.rtype,
             "type_label": self.type_label,
-            "incident":   self.incident,
-            "citizen":    self.citizen,
-            "priority":   self.priority,
-            "date":       self.date_filed,
-            "status":     self.status,
-            "fields":     json.loads(self.fields_json),
+            "incident": self.incident,
+            "citizen": self.citizen,
+            "priority": self.priority,
+            "date": self.date_filed,
+            "status": self.status,
+            "fields": json.loads(self.fields_json),
         }
 
 
 class Hearing(db.Model):
-    __tablename__ = 'hearings'
+    __tablename__ = "hearings"
 
-    id          = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    date        = db.Column(db.String(20), nullable=False)
-    time        = db.Column(db.String(20), nullable=False)
-    case_id     = db.Column(db.String(20), nullable=False)
+    id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    date = db.Column(db.String(20), nullable=False)
+    time = db.Column(db.String(20), nullable=False)
+    case_id = db.Column(db.String(20), nullable=False)
     complainant = db.Column(db.String(100), nullable=False)
-    incident    = db.Column(db.String(100), nullable=False)
-    mediator    = db.Column(db.String(100), nullable=False, default='Barangay Captain')
-    status      = db.Column(db.String(20), nullable=False, default='In Progress')
+    incident = db.Column(db.String(100), nullable=False)
+    mediator = db.Column(
+        db.String(100), nullable=False, default="Barangay Captain"
+    )
+    status = db.Column(db.String(20), nullable=False, default="In Progress")
 
     def to_dict(self):
         return {
-            "id":          self.id,
-            "date":        self.date,
-            "time":        self.time,
-            "case_id":     self.case_id,
+            "id": self.id,
+            "date": self.date,
+            "time": self.time,
+            "case_id": self.case_id,
             "complainant": self.complainant,
-            "incident":    self.incident,
-            "mediator":    self.mediator,
-            "status":      self.status,
+            "incident": self.incident,
+            "mediator": self.mediator,
+            "status": self.status,
         }
 
 
 class Notification(db.Model):
-    __tablename__ = 'notifications'
+    __tablename__ = "notifications"
 
-    id            = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    title         = db.Column(db.String(50), nullable=False, default='NEW REPORT')
-    reporter      = db.Column(db.String(100), nullable=False)
+    id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    title = db.Column(db.String(50), nullable=False, default="NEW REPORT")
+    reporter = db.Column(db.String(100), nullable=False)
     incident_type = db.Column(db.String(100), nullable=False)
-    report_id     = db.Column(db.String(20), nullable=False)
-    body          = db.Column(db.Text, nullable=False)
-    created       = db.Column(db.String(30), nullable=False)
-    seen          = db.Column(db.Boolean, nullable=False, default=False)
+    report_id = db.Column(db.String(20), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created = db.Column(db.String(30), nullable=False)
+    seen = db.Column(db.Boolean, nullable=False, default=False)
 
 
 # ---------------- Helpers ----------------
+
 
 def admin_required(fn):
     @wraps(fn)
@@ -118,6 +150,7 @@ def admin_required(fn):
         if "user" not in session or session["user"]["role"] != "admin":
             return redirect(url_for("admin_login"))
         return fn(*a, **kw)
+
     return wrapper
 
 
@@ -143,7 +176,6 @@ def add_notification(report_dict):
 
 def save_report(rtype, form, files):
     rtype_label = TYPE_LABELS.get(rtype, "Report")
-
     citizen = form.get("full_name") or "Anonymous"
 
     incident = (
@@ -163,7 +195,7 @@ def save_report(rtype, form, files):
                 narrative += f" {value}"
 
     priority = detect_priority(narrative)
-    today    = datetime.now().strftime("%b %d, %Y")
+    today = datetime.now().strftime("%b %d, %Y")
 
     report = Report(
         ticket_id="TEMP",
@@ -187,14 +219,18 @@ def save_report(rtype, form, files):
 
 
 def build_fields(rtype, f, files):
-    g = lambda k, d="": (f.get(k) or d).strip() if isinstance(f.get(k), str) else (f.get(k) or d)
+    g = (
+        lambda k, d="": (
+            (f.get(k) or d).strip() if isinstance(f.get(k), str) else (f.get(k) or d)
+        )
+    )
 
     def save_f(file_key):
         file_obj = files.get(file_key)
         if file_obj and file_obj.filename:
             fname = secure_filename(file_obj.filename)
             unique_name = f"{uuid.uuid4().hex[:8]}_{fname}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], unique_name)
             file_obj.save(filepath)
             return f"/static/uploads/{unique_name}"
         return "—"
@@ -314,6 +350,7 @@ def get_unread_count():
 
 # ---------------- Seed ----------------
 
+
 def seed_sample():
     if Report.query.count() == 0:
         sample_fields = {
@@ -367,12 +404,10 @@ def seed_sample():
 
 # ---------------- Routes ----------------
 
+
 @app.route("/")
 def index():
-    return render_template(
-        "citizen_hub.html",
-        hotspots=HOTSPOTS
-    )
+    return render_template("citizen_hub.html", hotspots=HOTSPOTS)
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -384,7 +419,11 @@ def admin_login():
         p = request.form.get("password", "")
         user = USERS.get(u)
         if user and user["password"] == p and user["role"] == "admin":
-            session["user"] = {"username": u, "role": user["role"], "name": user["name"]}
+            session["user"] = {
+                "username": u,
+                "role": user["role"],
+                "name": user["name"],
+            }
             return redirect(url_for("dashboard"))
         flash("Invalid username or password", "error")
     return render_template("login.html")
@@ -398,25 +437,38 @@ def admin_logout():
 
 # ---------------- ADMIN ----------------
 
+
 @app.route("/admin/dashboard")
 @admin_required
 def dashboard():
     all_reports = Report.query.order_by(Report.seq.desc()).limit(11).all()
     reports = [r.to_dict() for r in all_reports]
     stats = {
-        "pending":   Report.query.filter(Report.status != "Settled").count(),
+        "pending": Report.query.filter(Report.status != "Settled").count(),
         "completed": Report.query.filter_by(status="Settled").count(),
-        "total":     Report.query.count(),
-        "high":      Report.query.filter(Report.priority.in_(["Critical", "High"])).count(),
+        "total": Report.query.count(),
+        "high": Report.query.filter(
+            Report.priority.in_(["Critical", "High"])
+        ).count(),
     }
-    notifications = Notification.query.order_by(Notification.created.desc()).limit(5).all()
-    notif_list = [{
-        "title": n.title, "reporter": n.reporter,
-        "incident_type": n.incident_type, "body": n.body, "created": n.created,
-    } for n in notifications]
+    notifications = (
+        Notification.query.order_by(Notification.created.desc()).limit(5).all()
+    )
+    notif_list = [
+        {
+            "title": n.title,
+            "reporter": n.reporter,
+            "incident_type": n.incident_type,
+            "body": n.body,
+            "created": n.created,
+        }
+        for n in notifications
+    ]
     return render_template(
         "dashboard.html",
-        reports=reports, stats=stats, hotspots=HOTSPOTS,
+        reports=reports,
+        stats=stats,
+        hotspots=HOTSPOTS,
         notifications=notif_list,
         unread=get_unread_count(),
         active="dashboard",
@@ -426,20 +478,27 @@ def dashboard():
 @app.route("/admin/status-reports")
 @admin_required
 def status_reports():
-    page     = max(1, int(request.args.get("page", 1)))
+    page = max(1, int(request.args.get("page", 1)))
     per_page = 10
-    total    = Report.query.count()
+    total = Report.query.count()
     total_pages = max(1, (total + per_page - 1) // per_page)
     if page > total_pages:
         page = total_pages
-    pagination = Report.query.order_by(Report.seq).paginate(page=page, per_page=per_page, error_out=False)
+    pagination = (
+        Report.query.order_by(Report.seq)
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
     items = [r.to_dict() for r in pagination.items]
     start = (page - 1) * per_page
-    end   = min(start + per_page, total)
+    end = min(start + per_page, total)
     return render_template(
         "status_reports.html",
-        reports=items, page=page, total_pages=total_pages,
-        total=total, start=start + 1 if total else 0, end=end,
+        reports=items,
+        page=page,
+        total_pages=total_pages,
+        total=total,
+        start=start + 1 if total else 0,
+        end=end,
         start_index=start,
         unread=get_unread_count(),
         active="status",
@@ -462,7 +521,9 @@ def mediation():
     by_date = {}
     for h in all_hearings:
         by_date.setdefault(h.date, []).append(h.to_dict())
-    pending = [r.to_dict() for r in Report.query.filter_by(status="Pending").all()]
+    pending = [
+        r.to_dict() for r in Report.query.filter_by(status="Pending").all()
+    ]
     return render_template(
         "mediation.html",
         hearings=by_date,
@@ -476,19 +537,22 @@ def mediation():
 @app.route("/admin/hearings/schedule", methods=["POST"])
 @admin_required
 def schedule_hearing():
-    rid      = request.form.get("report_id")
-    date     = request.form.get("date")
-    time     = request.form.get("time")
+    rid = request.form.get("report_id")
+    date = request.form.get("date")
+    time = request.form.get("time")
     mediator = request.form.get("mediator") or "Barangay Captain"
-    r        = Report.query.filter_by(ticket_id=rid).first()
+    r = Report.query.filter_by(ticket_id=rid).first()
     if not r or not date or not time:
         flash("Please select a pending report, date and time.", "error")
         return redirect(url_for("mediation"))
     hearing = Hearing(
         id=str(uuid.uuid4()),
-        date=date, time=time,
-        case_id=r.ticket_id, complainant=r.citizen,
-        incident=r.incident, mediator=mediator,
+        date=date,
+        time=time,
+        case_id=r.ticket_id,
+        complainant=r.citizen,
+        incident=r.incident,
+        mediator=mediator,
         status="In Progress",
     )
     db.session.add(hearing)
@@ -501,7 +565,7 @@ def schedule_hearing():
 @app.route("/admin/hearings/update", methods=["POST"])
 @admin_required
 def update_hearing_status():
-    hid        = request.form.get("hearing_id")
+    hid = request.form.get("hearing_id")
     new_status = request.form.get("status")
     if new_status not in ("Pending", "In Progress", "Settled"):
         return jsonify({"error": "invalid status"}), 400
@@ -524,14 +588,26 @@ def update_hearing_status():
 @app.route("/admin/notifications")
 @admin_required
 def notifications_api():
-    items = Notification.query.order_by(Notification.created.desc()).limit(10).all()
-    return jsonify({
-        "items":  [{"id": n.id, "title": n.title, "reporter": n.reporter,
-                    "incident_type": n.incident_type, "body": n.body,
-                    "created": n.created} for n in items],
-        "unread": get_unread_count(),
-        "total":  Notification.query.count(),
-    })
+    items = (
+        Notification.query.order_by(Notification.created.desc()).limit(10).all()
+    )
+    return jsonify(
+        {
+            "items": [
+                {
+                    "id": n.id,
+                    "title": n.title,
+                    "reporter": n.reporter,
+                    "incident_type": n.incident_type,
+                    "body": n.body,
+                    "created": n.created,
+                }
+                move for n in items
+            ],
+            "unread": get_unread_count(),
+            "total": Notification.query.count(),
+        }
+    )
 
 
 @app.route("/admin/notifications/seen", methods=["POST"])
@@ -546,18 +622,33 @@ def notifications_seen():
 @admin_required
 def export_csv():
     buf = io.StringIO()
-    w   = csv.writer(buf)
-    w.writerow(["#", "ID", "Citizen", "Incident Type", "Priority", "Date Filed", "Status"])
+    w = csv.writer(buf)
+    w.writerow(
+        ["#", "ID", "Citizen", "Incident Type", "Priority", "Date Filed", "Status"]
+    )
     for i, r in enumerate(Report.query.order_by(Report.seq).all(), 1):
-        w.writerow([i, r.ticket_id, r.citizen, r.incident,
-                    r.priority, r.date_filed, r.status])
+        w.writerow(
+            [
+                i,
+                r.ticket_id,
+                r.citizen,
+                r.incident,
+                r.priority,
+                r.date_filed,
+                r.status,
+            ]
+        )
     return Response(
-        buf.getvalue(), mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=status_reports.csv"},
+        buf.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=status_reports.csv"
+        },
     )
 
 
 # ---------------- CITIZEN ----------------
+
 
 @app.route("/report")
 def report_type():
@@ -581,6 +672,7 @@ with app.app_context():
     db.create_all()
     seed_sample()
 
-
+# --- Railway Execution Settings ---
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
