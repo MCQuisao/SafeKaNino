@@ -602,7 +602,7 @@ def notifications_api():
                     "body": n.body,
                     "created": n.created,
                 }
-                move for n in items
+                for n in items
             ],
             "unread": get_unread_count(),
             "total": Notification.query.count(),
